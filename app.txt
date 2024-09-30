@@ -1,0 +1,56 @@
+' CONFIGURATION FILE
+'FOLLOWING CODE/FUNCTION(S) WILL BE EXECUTED WHEN APPLICATION SPECIFIC LIBRARY FILE IS LOADED DURING RUN TIME
+
+'********Manjunath - Precondition util code, These should be run first in any Function Library ********
+	'***Assigning current browser as nothing, Current Browser is used in report event failed status
+	Set g_CurrentBrowser=Nothing 'Assigning nothing to handle Runtime Error which will get in
+														'Report Event Fail, if webSetPage didn’t called once
+	'#############################
+	' PREREQUISITE CODE
+	'1)Close all the EXCEL.exe process
+		xlCloseAllExcelFile
+	' END OF PREREQUISITE CODE
+	'#############################
+	''***Instantiate New Data Dictionary, if not defined
+	ddNewDataDictionary
+	'+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	'These lines of code should be run once in either of the libraries (MasterLib OR ApplicationSpecificLib) associated to script before starting up the other related activities
+	'To accomplish that we are checking the "CurrentDate" key existence in DD and proceeding for the next step
+	If Not g_dDictionary.Exists("CurrentDate") Then
+			'1.A) Load current system date into DD with the key CurrentDate
+			utilMathCurrentDate 	
+			'1.B)Close all the opened browser except QC
+			'webCloseAllBrowsers			
+			'2)Load the test data from the QC Resources Module.
+			qcDownloadResourceByName "Test_Data", ""
+				'Check if test data path from QC is loaded to Data Dictionary, then Load all the external test data to data dictionary
+				If g_dDictionary.Exists("Test_Data_Path") Then
+						xlLoadExcelData ddGetItem ("Test_Data_Path"),"ConnectionInfo"
+				End If
+			'*******************************************************************
+				'Note: Please mention the required configuration settings either in TEST DATA file/Default sheet of the script ,if the script is not connected to Quality Center
+								'It's recommended to add these setting in QC Test Data file as these will be used in all the scripts
+								'Example: For OBJECT REPOSITORY Database mention the following key with the values in any data sheets
+								'1.Object_Repository_DataSourceType
+								'2.Object_Repository_dbTableName
+								'3.Object_Repository_ConnectionInfo		...
+			'*******************************************************************
+			'3)Load the test data from "default.xls" file, when master library file is loaded.
+			xlLoadExcelData "",""
+	End If
+	'+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'************************************************************************************
+
+'4)Download the Microsoft Access Object Repository from the QC Resources Module	
+	qcDownloadResourceByName "Object_Repository", ""
+'4.1) Add the OR Path as the Connection Info.  This is needed to line the variables up to be used
+'		by the database classes
+	ddAddItem "Object_Repository_ConnectionInfo", ddGetItem ("Object_Repository_Path")
+'	5)Check the "URL" key existence in the base(script) level DD, If not defined then get it from the QC test set of the respective script
+	If Not g_dDictionary.Exists("URL") Then
+		'5.1) Get the URL File description from the test set or test set parent folder and store to the DD with a key 'URL'
+		qcGetURLFromParentTSFolder
+	End If
+	
+	
+	'=========Application Specific Functions======
